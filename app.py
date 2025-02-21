@@ -117,6 +117,11 @@ def analyze():
     result = analyze_sentence(sentence)
     return jsonify(result)
 
+# Default route for testing Railway deployment
+@app.route('/')
+def home():
+    return "Railway deployment is successful! Use the /analyze endpoint to analyze sentences."
+
 # Run the Flask app
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))

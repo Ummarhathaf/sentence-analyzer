@@ -1,7 +1,7 @@
-flask
+Flask
 flask_cors
 spacy
 deep-translator
-gunicorn
 gspread
 oauth2client
+gunicorn
