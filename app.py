@@ -51,13 +51,14 @@ def analyze_sentence(sentence):
     tamil_sentence_structure = []
     sentence_pattern = []
     tamil_sentence_pattern = []
-
+    
     auxiliary_verbs = []
-    subject, verb, direct_object, indirect_object, adverb, adjective, complement = None, None, None, None, None, None, None
+    subject, verb, direct_object, indirect_object, adverb, complement, prepositional_phrases = None, None, None, None, [], None, []
 
     # Identify sentence components
     for token in doc:
         role = ""
+        
         if token.dep_ in ("nsubj", "nsubjpass"):
             role = "Subject"
             subject = token.text
@@ -75,20 +76,38 @@ def analyze_sentence(sentence):
             indirect_object = token.text
         elif token.dep_ in ("advmod", "npadvmod"):
             role = "Adverb"
-            adverb = token.text
-        elif token.dep_ in ("acomp", "attr"):
+            adverb.append(token.text)
+        elif token.dep_ in ("acomp", "attr", "csubj"):
             role = "Complement"
             complement = token.text
-        elif token.pos_ == "ADJ":
-            role = "Adjective"
-            adjective = token.text
+        elif token.dep_ == "prep":  # Identify prepositional phrases
+            prep_phrase = " ".join([token.text] + [child.text for child in token.children])
+            prepositional_phrases.append(prep_phrase)
 
         if role and role != "Auxiliary Verb":
             components.append((role, token.text))
 
     # Construct sentence pattern dynamically
-    sentence_pattern = [role[:1] + ".O" if "Object" in role else role[:1] for role, _ in components]
-    tamil_sentence_pattern = [glossary.get(role, role) for role, _ in components]
+    if subject:
+        sentence_pattern.append("S")
+    if verb:
+        sentence_pattern.append("V")
+    if direct_object and indirect_object:
+        sentence_pattern.append("IO")
+        sentence_pattern.append("DO")
+    elif direct_object:
+        sentence_pattern.append("O")
+    elif indirect_object:
+        sentence_pattern.append("IO")
+    if complement:
+        sentence_pattern.append("C")
+    if adverb:
+        sentence_pattern.extend(["A"] * len(adverb))
+    if prepositional_phrases:
+        sentence_pattern.extend(["PP"] * len(prepositional_phrases))
+
+    # Tamil sentence pattern translation
+    tamil_sentence_pattern = [glossary.get(role, role) for role in sentence_pattern]
 
     # Construct sentence structure
     for role, word in components:
@@ -105,6 +124,7 @@ def analyze_sentence(sentence):
         "Tamil Sentence Pattern": " + ".join(tamil_sentence_pattern) if tamil_sentence_pattern else "முறையை கண்டுபிடிக்க முடியவில்லை",
         "Tamil Sentence Structure": " + ".join(tamil_sentence_structure) if tamil_sentence_structure else "அமைப்பை கண்டுபிடிக்க முடியவில்லை"
     }
+
 
 # Define the API endpoint
 @app.route('/analyze', methods=['POST'])
